@@ -6,7 +6,7 @@ jmp stage2_start
 
 ; constants
 PML4T_START equ 0x1000
-PROT_MODE_STACK 0x90000
+PROT_MODE_STACK equ 0x90000
 
 ; includes
 %include "cpu/cpu.asm"
