@@ -1,5 +1,7 @@
 ; from https://wiki.osdev.org/ATA_read/write_sectors
 
+[bits 64]
+
 ;=============================================================================
 ; ATA read sectors (CHS mode) 
 ; Max head index is 15, giving 16 possible heads

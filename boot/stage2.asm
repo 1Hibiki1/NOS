@@ -1,12 +1,19 @@
 [org 0x7e00]
 [bits 16]
 
+; ASSUMES 512 disk sector size
+
 ; jump to "main"
 jmp stage2_start
 
 ; constants
 PML4T_START equ 0x1000
 PROT_MODE_STACK equ 0x90000
+LONG_MODE_STACK equ 0xf0000
+
+STAGE3_START_ADDR equ 0xA000
+STAGE3_START_SECTOR equ 4
+STAGE3_N_SECTORS equ 5
 
 ; includes
 %include "cpu/cpu.asm"
@@ -147,6 +154,7 @@ no_long_mode:
 [bits 64]
 
 %include "disk/ata.asm"
+%include "disk/FAT32.asm"
 
 long_mode_start:
     ; initialize segment registers
@@ -156,6 +164,9 @@ long_mode_start:
     mov fs, ax                    ; Set the F-segment to the A-register.
     mov gs, ax                    ; Set the G-segment to the A-register.
     mov ss, ax                    ; Set the stack segment to the A-register.
+
+    mov rsp, LONG_MODE_STACK
+    mov rbp, rsp
 
     ; clear screen, blue bg/ white fg
     mov rdi, 0xB8000              ; Set the destination index to 0xB8000.
@@ -171,11 +182,14 @@ long_mode_start:
     mov rdi, 0x100000
     call ata_lba_read
 
+    mov rax, 0x100000
+    call FAT32_load_info
+
     ; print some number of characters we read starting at offset 3
     ; which is BPB OEM ID string
     mov rcx, 3
     mov rdx, 0
-.loop
+.loop:
     cmp rcx, 10
     je .loop_done
 
@@ -184,6 +198,27 @@ long_mode_start:
     inc rcx
     add rdx, 2
     jmp .loop
+.loop_done:
 
-.loop_done
+    ; read the third stage (sector 4) to 0xA000
+    mov rdi, STAGE3_START_ADDR
+    mov rax, (STAGE3_START_SECTOR - 1)
+.sec3_read_loop:
+    inc rax
+    ; rax = sector to read
+    ; cl = num sectors
+    mov cl, 1
+    ; rdi = address in memory to read into
+    call ata_lba_read
+
+    add rdi, 512
+
+    cmp rax, STAGE3_N_SECTORS
+    jne .sec3_read_loop
+
+    jmp STAGE3_START_ADDR
+
     hlt
+
+
+times ((STAGE3_START_SECTOR - 1)*512)-($-$$) db 0
