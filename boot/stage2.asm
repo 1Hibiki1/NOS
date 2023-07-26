@@ -21,13 +21,6 @@ STAGE3_N_SECTORS equ 5
 %include "cpu/a20.asm"
 %include "screen/screen16.asm"
 
-; strings
-DONE_STR            db 'done', 0
-DISABLE_INT_MSG     db 'diabling interrupts...', 0
-DISABLE_NMI_MSG     db 'diabling NMI...', 0
-ENABLE_A20_MSG      db 'enabling A20...', 0
-LGDT_MSG    db 'loading gdt...', 0
-
 ; stage 2 entrypoint
 stage2_start:
     ; disable interrupts
